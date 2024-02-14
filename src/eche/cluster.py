@@ -1,10 +1,9 @@
 """Methods to deal with entity clusters."""
 import os
 import random
-from collections import OrderedDict
 from copy import deepcopy
 from itertools import chain, combinations
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, OrderedDict, Set, Tuple, Union
 
 from .graph_based_clustering import connected_components
 
@@ -245,8 +244,7 @@ class ClusterHelper:
         """Check if entities/links/clusters are contained.
 
         Args:
-            key: Either entity id, Tuple with two entities to check for a link
-            between entities, or a clusters as set of entity ids
+            key: Either entity id, Tuple with two entities to check for a link between entities, or a clusters as set of entity ids
         """
         if isinstance(key, Set):
             return key in self.clusters.values()
