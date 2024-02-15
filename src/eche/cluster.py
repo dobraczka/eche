@@ -3,7 +3,18 @@ import os
 import random
 from copy import deepcopy
 from itertools import chain, combinations
-from typing import Any, Dict, Iterable, List, Optional, OrderedDict, Set, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    Iterable,
+    List,
+    Optional,
+    OrderedDict,
+    Set,
+    Tuple,
+    Union,
+)
 
 from .graph_based_clustering import connected_components
 
@@ -529,15 +540,81 @@ class PrefixedClusterHelper(ClusterHelper):
         new_entry: Set,
         c_id: Optional[int] = None,
     ) -> int:
+        """Add a new cluster.
+
+        Args:
+            new_entry: New cluster as set
+            c_id: Cluster id that will be assigned.
+           If None, the next largest cluster id will be assigned
+           Assuming cluster ids are integers
+
+        Raises:
+            ValueError: If entity id already present in other cluster
+                Or if new cluster id cannot be inferred automatically by incrementing
+                Or if prefix is unknown
+        """
         for e_id in new_entry:
             self._check_known_prefix(e_id)
         return super().add(new_entry=new_entry, c_id=c_id)
 
     def add_link(self, e1: str, e2: str) -> Union[int, bool]:
+        """Add a new entity link.
+
+        Either adds a link to an existing entity or
+        creates a new cluster with both.
+
+        Args:
+            e1: Id of one entity that will be linked
+            e2: Id of other entity that will be linked
+
+        Returns:
+            Id of cluster that was created, or
+            of existing cluster that was enhanced
+            Returns False if link already was present
+
+        Raises:
+            ValueError: If prefix is unknown
+        """
         self._check_known_prefix(e1)
         self._check_known_prefix(e2)
         return super().add_link(e1=e1, e2=e2)
 
     def add_to_cluster(self, c_id: int, new_entity: str):
+        """Add an entity to a cluster.
+
+        Args:
+            c_id: Cluster id where entity will be added
+            new_entity: Id of new entity
+
+        Raises:
+            KeyError: If cluster id or prefix is unknown
+            ValueError: If entity already belongs to other cluster
+        """
         self._check_known_prefix(new_entity)
         return super().add_to_cluster(c_id=c_id, new_entity=new_entity)
+
+    def pairs_in_ds_tuple(
+        self, ds_tuple: Tuple[str, str]
+    ) -> Generator[Tuple[str, str], None, None]:
+        for ds_name in ds_tuple:
+            if ds_name not in self.ds_names:
+                raise ValueError("Unknown dataset name {ds_name}")
+        lpref = self.ds_prefixes[ds_tuple[0]]
+        rpref = self.ds_prefixes[ds_tuple[1]]
+        for pair in super().all_pairs():
+            left, right = None, None
+            if pair[0].startswith(lpref) and pair[1].startswith(rpref):
+                left = pair[0]
+                right = pair[1]
+            elif pair[1].startswith(lpref) and pair[0].startswith(rpref):
+                left = pair[1]
+                right = pair[0]
+            if left is not None and right is not None:
+                yield left, right
+            else:
+                continue
+
+    def intra_dataset_pairs(
+        self, ds_name: str
+    ) -> Generator[Tuple[str, str], None, None]:
+        return self.pairs_in_ds_tuple(ds_tuple=(ds_name, ds_name))

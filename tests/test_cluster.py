@@ -15,6 +15,37 @@ def prefixed_cluster():
     return prefixes, clusters
 
 
+@pytest.fixture()
+def multi_source_prefixed_cluster():
+    prefixes = OrderedDict({"left": "l:", "right": "r:", "middle": "m:"})
+    clusters = {
+        0: {"l:a", "r:b", "r:c", "m:a"},
+        1: {"l:d", "l:e", "m:b"},
+        2: {"l:f", "l:g", "r:h", "r:i"},
+    }
+    return prefixes, clusters
+
+
+@pytest.fixture()
+def expected_prefixed_pairs():
+    return {
+        ("l:a", "r:c"),
+        ("l:a", "r:b"),
+        ("l:g", "r:h"),
+        ("l:g", "r:i"),
+        ("l:f", "r:h"),
+        ("l:f", "r:i"),
+    }
+
+
+@pytest.fixture()
+def expected_prefixed_pairs_intra():
+    return {
+        frozenset({"l:d", "l:e"}),
+        frozenset({"l:f", "l:g"}),
+    }
+
+
 def test_clusters_init():
     clusters_1 = ClusterHelper([{"a1", "1"}, {"a2", "2"}, {"a3", "3"}])
 
@@ -336,3 +367,29 @@ def test_prefixed_cluster_add_to_cluster(prefixed_cluster):
     correct_entity = "r:orem"
     ch.add_to_cluster(c_id=c_id, new_entity=correct_entity)
     assert ch.elements[correct_entity] == c_id
+
+
+def test_pairs_in_ds_tuple_binary(prefixed_cluster, expected_prefixed_pairs):
+    prefixes, clusters = prefixed_cluster
+    ds_names = tuple(prefixes.keys())
+    ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
+    assert expected_prefixed_pairs == set(ch.pairs_in_ds_tuple(ds_tuple=ds_names))
+
+
+def test_pairs_in_ds_tuple_multi(
+    multi_source_prefixed_cluster, expected_prefixed_pairs
+):
+    prefixes, clusters = multi_source_prefixed_cluster
+    ds_names = tuple(prefixes.keys())
+    ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
+    assert expected_prefixed_pairs == set(ch.pairs_in_ds_tuple(ds_tuple=ds_names))
+
+
+def test_intra_dataset_pairs(
+    multi_source_prefixed_cluster, expected_prefixed_pairs_intra
+):
+    prefixes, clusters = multi_source_prefixed_cluster
+    ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
+    # tuple order does not matter in intra-dataset links
+    frzset_pairs = set(map(frozenset, ch.intra_dataset_pairs(ds_name="left")))
+    assert expected_prefixed_pairs_intra == frzset_pairs
