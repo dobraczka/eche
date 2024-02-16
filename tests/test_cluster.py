@@ -385,6 +385,13 @@ def test_pairs_in_ds_tuple_multi(
     assert expected_prefixed_pairs == set(ch.pairs_in_ds_tuple(ds_tuple=ds_names))
 
 
+def test_get_ds_entities(multi_source_prefixed_cluster):
+    expected = {"m:a", "m:b"}
+    prefixes, clusters = multi_source_prefixed_cluster
+    ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
+    assert expected == set(ch.get_ds_entities("middle"))
+
+
 def test_intra_dataset_pairs(
     multi_source_prefixed_cluster, expected_prefixed_pairs_intra
 ):

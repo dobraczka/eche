@@ -29,7 +29,7 @@ class ClusterHelper:
     The :meth:`.add()` and :meth:`.remove()` keep the respective dicts in sync.
 
     Examples:
-    >>> from forayer.knowledge_graph import ClusterHelper
+    >>> from eche import ClusterHelper
     >>> ch = ClusterHelper([{"a1", "b1"}, {"a2", "b2"}])
     >>> print(ch)
     {0: {'a1', 'b1'}, 1: {'a2', 'b2'}}
@@ -101,7 +101,7 @@ class ClusterHelper:
         for cluster_id, inner in enumerate(data):
             if not isinstance(inner, set):
                 raise TypeError(
-                    f"Only set is allowed as list element, but got {type(inner)}"
+                    f'Only set is allowed as list element, but got "{type(inner)}"'
                 )
             inner_set = set()
             for inner_element in inner:
@@ -113,7 +113,7 @@ class ClusterHelper:
         for cluster_id, dict_items in enumerate(data.items()):
             left, right = dict_items
             if left == right:
-                raise ValueError(f"No selflinks allowed: {left} -> {right}")
+                raise ValueError(f'No selflinks allowed: "{left}" -> "{right}"')
             self.elements[left] = cluster_id
             self.clusters[cluster_id] = {left}
             self.elements[right] = cluster_id
@@ -166,8 +166,8 @@ class ClusterHelper:
     def __str__(self):
         return str(self.clusters)
 
-    def info(self):
-        """Print general information about this object.
+    def info(self) -> str:
+        """Return general information about this object.
 
         Returns:
             information about number of entities and clusters
@@ -179,7 +179,7 @@ class ClusterHelper:
             + f"(# elements:{num_elements}, # clusters:{num_clusters})"
         )
 
-    def links(self, key: str, always_return_set=False) -> Union[str, Set[str]]:
+    def links(self, key: str, always_return_set: bool = False) -> Union[str, Set[str]]:
         """Get entities linked to this entity.
 
         Args:
@@ -367,7 +367,7 @@ class ClusterHelper:
             raise KeyError("Cluster id {c_id} unknown")
         if new_entity in self.elements:
             raise ValueError(
-                "Entity id {new_entity} already belongs to {self.clusters[c_id]}"
+                'Entity id "{new_entity}" already belongs to "{self.clusters[c_id]}"'
             )
         self.elements[new_entity] = c_id
         self.clusters[c_id].add(new_entity)
@@ -509,6 +509,41 @@ class ClusterHelper:
 
 
 class PrefixedClusterHelper(ClusterHelper):
+    """ClusterHelper which uses prefixes, to associate entities with datasets.
+
+    Examples:
+    >>> from eche import PrefixedClusterHelper
+    >>> prefixes = OrderedDict({"ds1": "foo:", "ds2": "bar:", "ds3": "baz:"})
+    >>> clusters = {
+    ...     0: {"foo:a", "bar:b", "bar:c", "baz:a"},
+    ...     1: {"foo:d", "foo:e", "baz:b"},
+    ...     2: {"foo:f", "foo:g", "bar:h", "bar:i"},
+    ... }
+    >>> ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
+
+    Only entities with known prefix can be added
+
+    >>> ch.add_to_cluster(0, "unknown:b")
+    ValueError: "unknown:b" does not start with any known prefix: ['foo:', 'bar:', 'baz:']
+
+    You can ask for entity pairs of a binary combination of datasets
+    The tuples are ordered as the supplied dataset tuples implies
+    i.e. all the first tuple entries are entities of the first dataset
+
+    >>> list(ch.pairs_in_ds_tuple(("ds1","ds3")))
+    [('foo:a', 'baz:a'), ('foo:d', 'baz:b'), ('foo:e', 'baz:b')]
+
+    Intradataset links can also be returned
+
+    >>> list(ch.intra_dataset_pairs("ds2"))
+    [('bar:c', 'bar:b'), ('bar:i', 'bar:h')]
+
+    To get all entities of a single dataset you can use
+
+    >>> list(ch.get_ds_entities("ds1"))
+    ["foo:a", "foo:d", "foo:e", "foo:g", "foo:f"]
+    """
+
     def __init__(
         self,
         ds_prefixes: OrderedDict[str, str],
@@ -524,7 +559,7 @@ class PrefixedClusterHelper(ClusterHelper):
             if eid.startswith(pref):
                 return
         raise ValueError(
-            f"{eid} does not start with any known prefix: {self.known_prefixes}"
+            f'"{eid}" does not start with any known prefix: {self.known_prefixes}'
         )
 
     @property
@@ -593,12 +628,34 @@ class PrefixedClusterHelper(ClusterHelper):
         self._check_known_prefix(new_entity)
         return super().add_to_cluster(c_id=c_id, new_entity=new_entity)
 
+    def get_ds_entities(self, ds_name: str) -> Generator[str, None, None]:
+        """Get all entities belonging to the given dataset.
+
+        Args:
+            ds_name: Name of dataset
+
+        Returns:
+            Generator producing entity ids of the given dataset
+        """
+        prefix = self.ds_prefixes[ds_name]
+        for ele in self.elements:
+            if ele.startswith(prefix):
+                yield ele
+
     def pairs_in_ds_tuple(
         self, ds_tuple: Tuple[str, str]
     ) -> Generator[Tuple[str, str], None, None]:
+        """Returns known links between given datasets.
+
+        Args:
+            ds_tuple: Dataset tuple
+
+        Returns:
+            Generator that produces known links between given datasets.
+        """
         for ds_name in ds_tuple:
             if ds_name not in self.ds_names:
-                raise ValueError("Unknown dataset name {ds_name}")
+                raise ValueError(f"Unknown dataset name {ds_name}")
         lpref = self.ds_prefixes[ds_tuple[0]]
         rpref = self.ds_prefixes[ds_tuple[1]]
         for pair in super().all_pairs():
@@ -617,4 +674,12 @@ class PrefixedClusterHelper(ClusterHelper):
     def intra_dataset_pairs(
         self, ds_name: str
     ) -> Generator[Tuple[str, str], None, None]:
+        """Returns known links inside given dataset.
+
+        Args:
+            ds_name: Dataset for which to find links
+
+        Returns:
+            Generator that produces known links inside given dataset.
+        """
         return self.pairs_in_ds_tuple(ds_tuple=(ds_name, ds_name))
