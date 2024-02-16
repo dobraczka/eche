@@ -88,7 +88,7 @@ or simply
   {'a1', 'b1', 'c1'}
 ```
 
-More functions can be found in the [Documentation](eche.readthedocs.io/).
+More functions can be found in the [Documentation](https://eche.readthedocs.io).
 
 Installation
 ============
