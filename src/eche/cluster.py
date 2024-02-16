@@ -29,62 +29,61 @@ class ClusterHelper:
     The :meth:`.add()` and :meth:`.remove()` keep the respective dicts in sync.
 
     Examples:
-    >>> from eche import ClusterHelper
-    >>> ch = ClusterHelper([{"a1", "b1"}, {"a2", "b2"}])
-    >>> print(ch.clusters)
-    {0: {'a1', 'b1'}, 1: {'a2', 'b2'}}
+        >>> from eche import ClusterHelper
+        >>> ch = ClusterHelper([{"a1", "b1"}, {"a2", "b2"}])
+        >>> print(ch.clusters)
+        {0: {'a1', 'b1'}, 1: {'a2', 'b2'}}
 
-    Add an element to a cluster
+        Add an element to a cluster
 
-    >>> ch.add_to_cluster(0, "c1")
-    >>> print(ch.clusters)
-    {0: {'a1', 'b1', 'c1'}, 1: {'a2', 'b2'}}
+        >>> ch.add_to_cluster(0, "c1")
+        >>> print(ch.clusters)
+        {0: {'a1', 'b1', 'c1'}, 1: {'a2', 'b2'}}
 
-    Add a new cluster
+        Add a new cluster
 
-    >>> ch.add({"e2", "f1", "c3"})
-    >>> print(ch.clusters)
-    {0: {'a1', 'b1', 'c1'}, 1: {'a2', 'b2'}, 2: {'f1', 'e2', 'c3'}}
+        >>> ch.add({"e2", "f1", "c3"})
+        >>> print(ch.clusters)
+        {0: {'a1', 'b1', 'c1'}, 1: {'a2', 'b2'}, 2: {'f1', 'e2', 'c3'}}
 
-    Remove an element from a cluster
+        Remove an element from a cluster
 
-    >>> ch.remove("b1")
-    >>> print(ch.clusters)
-    {0: {'a1', 'c1'}, 1: {'a2', 'b2'}, 2: {'f1', 'e2', 'c3'}}
+        >>> ch.remove("b1")
+        >>> print(ch.clusters)
+        {0: {'a1', 'c1'}, 1: {'a2', 'b2'}, 2: {'f1', 'e2', 'c3'}}
 
-    The __contains__ function is smartly overloaded. You can
-    check if an entity is in the ClusterHelper
+        The __contains__ function is smartly overloaded. You can
+        check if an entity is in the ClusterHelper
 
-    >>> "a1" in ch
-    True
+        >>> "a1" in ch
+        True
 
-    If a cluster is present
+        If a cluster is present
 
-    >>> {"c1","a1"} in ch
-    True
+        >>> {"c1","a1"} in ch
+        True
 
-    And even if a link exists or not
+        And even if a link exists or not
 
-    >>> ("f1","e2") in ch
-    True
-    >>> ("a1","e2") in ch
-    False
+        >>> ("f1","e2") in ch
+        True
+        >>> ("a1","e2") in ch
+        False
 
-    To know the cluster id of an entity you can look it up with
+        To know the cluster id of an entity you can look it up with
 
-    >>> ch.elements["a1"]
-    0
+        >>> ch.elements["a1"]
+        0
 
-    To get members of a cluster either use
+        To get members of a cluster either use
 
-    >>> ch.members(0)
-    {'a1', 'b1', 'c1'}
+        >>> ch.members(0)
+        {'a1', 'b1', 'c1'}
 
-    or simply
+        or simply
 
-    >>> ch[0]
-    {'a1', 'b1', 'c1'}
-
+        >>> ch[0]
+        {'a1', 'b1', 'c1'}
     """
 
     def _contains_overlaps(self, data):
@@ -512,36 +511,36 @@ class PrefixedClusterHelper(ClusterHelper):
     """ClusterHelper which uses prefixes, to associate entities with datasets.
 
     Examples:
-    >>> from eche import PrefixedClusterHelper
-    >>> prefixes = OrderedDict({"ds1": "foo:", "ds2": "bar:", "ds3": "baz:"})
-    >>> clusters = {
-    ...     0: {"foo:a", "bar:b", "bar:c", "baz:a"},
-    ...     1: {"foo:d", "foo:e", "baz:b"},
-    ...     2: {"foo:f", "foo:g", "bar:h", "bar:i"},
-    ... }
-    >>> ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
+        >>> from eche import PrefixedClusterHelper
+        >>> prefixes = OrderedDict({"ds1": "foo:", "ds2": "bar:", "ds3": "baz:"})
+        >>> clusters = {
+        ...     0: {"foo:a", "bar:b", "bar:c", "baz:a"},
+        ...     1: {"foo:d", "foo:e", "baz:b"},
+        ...     2: {"foo:f", "foo:g", "bar:h", "bar:i"},
+        ... }
+        >>> ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
 
-    Only entities with known prefix can be added
+        Only entities with known prefix can be added
 
-    >>> ch.add_to_cluster(0, "unknown:b")
-    ValueError: "unknown:b" does not start with any known prefix: ['foo:', 'bar:', 'baz:']
+        >>> ch.add_to_cluster(0, "unknown:b")
+        ValueError: "unknown:b" does not start with any known prefix: ['foo:', 'bar:', 'baz:']
 
-    You can ask for entity pairs of a binary combination of datasets
-    The tuples are ordered as the supplied dataset tuples implies
-    i.e. all the first tuple entries are entities of the first dataset
+        You can ask for entity pairs of a binary combination of datasets
+        The tuples are ordered as the supplied dataset tuples implies
+        i.e. all the first tuple entries are entities of the first dataset
 
-    >>> list(ch.pairs_in_ds_tuple(("ds1","ds3")))
-    [('foo:a', 'baz:a'), ('foo:d', 'baz:b'), ('foo:e', 'baz:b')]
+        >>> list(ch.pairs_in_ds_tuple(("ds1","ds3")))
+        [('foo:a', 'baz:a'), ('foo:d', 'baz:b'), ('foo:e', 'baz:b')]
 
-    Intradataset links can also be returned
+        Intradataset links can also be returned
 
-    >>> list(ch.intra_dataset_pairs("ds2"))
-    [('bar:c', 'bar:b'), ('bar:i', 'bar:h')]
+        >>> list(ch.intra_dataset_pairs("ds2"))
+        [('bar:c', 'bar:b'), ('bar:i', 'bar:h')]
 
-    To get all entities of a single dataset you can use
+        To get all entities of a single dataset you can use
 
-    >>> list(ch.get_ds_entities("ds1"))
-    ["foo:a", "foo:d", "foo:e", "foo:g", "foo:f"]
+        >>> list(ch.get_ds_entities("ds1"))
+        ["foo:a", "foo:d", "foo:e", "foo:g", "foo:f"]
     """
 
     def __init__(
