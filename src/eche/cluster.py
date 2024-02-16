@@ -31,25 +31,25 @@ class ClusterHelper:
     Examples:
     >>> from eche import ClusterHelper
     >>> ch = ClusterHelper([{"a1", "b1"}, {"a2", "b2"}])
-    >>> print(ch)
+    >>> print(ch.clusters)
     {0: {'a1', 'b1'}, 1: {'a2', 'b2'}}
 
     Add an element to a cluster
 
     >>> ch.add_to_cluster(0, "c1")
-    >>> print(ch)
+    >>> print(ch.clusters)
     {0: {'a1', 'b1', 'c1'}, 1: {'a2', 'b2'}}
 
     Add a new cluster
 
     >>> ch.add({"e2", "f1", "c3"})
-    >>> print(ch)
+    >>> print(ch.clusters)
     {0: {'a1', 'b1', 'c1'}, 1: {'a2', 'b2'}, 2: {'f1', 'e2', 'c3'}}
 
     Remove an element from a cluster
 
     >>> ch.remove("b1")
-    >>> print(ch)
+    >>> print(ch.clusters)
     {0: {'a1', 'c1'}, 1: {'a2', 'b2'}, 2: {'f1', 'e2', 'c3'}}
 
     The __contains__ function is smartly overloaded. You can
