@@ -28,7 +28,7 @@ def to_chain(elements: Collection[T]) -> Generator[Tuple[T, T], None, None]:
         elements: Container with elements
 
     Examples:
-        >>> to_edges(['a','b','c','d'])
+        >>> to_chain(['a','b','c','d'])
         [(a,b), (b,c),(c,d)]
     """
     it = iter(set(elements))
