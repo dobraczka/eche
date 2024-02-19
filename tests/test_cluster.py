@@ -397,6 +397,8 @@ def test_intra_dataset_pairs(
 ):
     prefixes, clusters = multi_source_prefixed_cluster
     ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
+    pair_list = list(ch.intra_dataset_pairs(ds_name="left"))
+    assert len(expected_prefixed_pairs_intra) == len(pair_list)
     # tuple order does not matter in intra-dataset links
-    frzset_pairs = set(map(frozenset, ch.intra_dataset_pairs(ds_name="left")))
+    frzset_pairs = set(map(frozenset, pair_list))
     assert expected_prefixed_pairs_intra == frzset_pairs
