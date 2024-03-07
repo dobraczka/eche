@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+import numpy as np
 import pytest
 from eche import ClusterHelper, PrefixedClusterHelper
 
@@ -322,11 +323,12 @@ def test_clone():
     assert ch != cloned
 
 
-def test_from_to_file(tmp_path):
+@pytest.mark.parametrize(("write_cid", "read_cid"), [(False, False), (True, True)])
+def test_from_to_file(write_cid, read_cid, tmp_path):
     file_path = tmp_path / "cluster_file"
     ch = ClusterHelper({0: {"a", "b", "c"}, 1: {"d", "e"}, 2: {"f", "g", "h", "i"}})
-    ch.to_file(file_path)
-    file_ch = ClusterHelper.from_file(file_path)
+    ch.to_file(file_path, write_cluster_id=write_cid)
+    file_ch = ClusterHelper.from_file(file_path, has_cluster_id=read_cid)
     assert file_ch == ch
 
 

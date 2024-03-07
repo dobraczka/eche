@@ -4,6 +4,7 @@ import random
 from copy import deepcopy
 from itertools import chain, combinations
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Generator,
@@ -15,6 +16,9 @@ from typing import (
     Tuple,
     Union,
 )
+
+if TYPE_CHECKING:
+    import numpy as np
 
 from .graph_based_clustering import connected_components
 
@@ -153,7 +157,7 @@ class ClusterHelper:
             raise TypeError(f"Only list or dict allowed, but got {type(data)}")
         if isinstance(data, list):
             self._from_sets(data)
-        elif isinstance(data, dict):
+        elif isinstance(data, dict) and len(data) != 0:
             if isinstance(next(iter(data.values())), set):
                 self._from_clusters(data)
             else:
@@ -473,38 +477,54 @@ class ClusterHelper:
         return sum(map(number_of_pairs_in_set, self.clusters.values()))
 
     @classmethod
-    def from_file(cls, path: Union[str, os.PathLike]) -> "ClusterHelper":
+    def from_file(
+        cls, path: Union[str, os.PathLike], has_cluster_id: bool = False
+    ) -> "ClusterHelper":
         """Create ClusterHelper from file.
 
-        Expects entities seperated by comma, with first entry being the cluster id.
+        Expects entities seperated by comma, with each line representing a cluster.
 
         Args:
             path: path to file containing entity clusters
+            has_cluster_id: if True, the first entry in each line is used as cluster id
 
         Returns:
             ClusterHelper
         """
-        e_to_cid: Dict[int, Set[str]] = {}
+        e_to_cid: Dict[Union[int, str], Set[str]] = {}
         with open(path) as in_file:
-            for line in in_file:
+            for idx, line in enumerate(in_file):
+                c_id: Union[str, int]
                 values = line.strip().split(",")
-                c_id = int(values[0])
-                entries = set(values[1:])
+                entries_start = 0
+                if has_cluster_id:
+                    entries_start = 1
+                    try:
+                        c_id = int(values[0])
+                    except ValueError:
+                        c_id = values[0]
+                else:
+                    c_id = idx
+                entries = set(values[entries_start:])
                 e_to_cid[c_id] = entries
         return ClusterHelper(e_to_cid)
 
-    def to_file(self, path: Union[str, os.PathLike]):
+    def to_file(self, path: Union[str, os.PathLike], write_cluster_id: bool = True):
         """Write clusters to file.
 
-        Each line is: cluster_id,comma-seperated-entities.
+        Each line is: cluster_id,comma-seperated entities.
 
         Args:
             path: Where to write the clusters.
+            write_cluster_id: If False, lines are only comma-seperated entities
         """
         with open(path, "w") as out_file:
             for c_id, elements in self.clusters.items():
                 ele_line = ",".join(elements)
-                out_file.write(f"{c_id},{ele_line}\n")
+                if write_cluster_id:
+                    out_file.write(f"{c_id},{ele_line}\n")
+                else:
+                    out_file.write(f"{ele_line}\n")
 
 
 class PrefixedClusterHelper(ClusterHelper):
