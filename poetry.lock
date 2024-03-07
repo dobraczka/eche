@@ -999,7 +999,7 @@ tomlkit = ">=0.7"
 name = "numpy"
 version = "1.24.4"
 description = "Fundamental package for array computing in Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=3.8"
 files = [
@@ -1902,4 +1902,4 @@ docs = ["mkdocs", "mkdocs-material", "mkdocstrings", "mkdocs-literate-nav", "mkd
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.8,<4.0"
-content-hash = "9e6273c41342fe4bb69b5866e27d8bd32bd79594e5d3f6111de8598cc63b96ff"
+content-hash = "b898feb810e0cc9f69c0fd5082b07818e4dad2b1571cebaf5608032c0d5ea66d"
