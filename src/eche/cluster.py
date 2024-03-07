@@ -526,6 +526,30 @@ class ClusterHelper:
                 else:
                     out_file.write(f"{ele_line}\n")
 
+    @classmethod
+    def from_numpy(cls, numpy_links: "np.ndarray", *args, **kwargs) -> "ClusterHelper":
+        """Create a ClusterHelper from a 2D numpy array.
+
+        Args:
+            numpy_links: binary links in 2D numpy array
+            ds_prefixes: Dataset prefixes
+            args: ignored
+            kwargs: ignored
+
+        Returns:
+            "ClusterHelper":
+        """
+        if not numpy_links.shape[1] == _BINARY_MATCH_LEN:
+            raise ValueError(
+                f"Can only handle binary links (i.e. 2d array) as input, but got array of shape {numpy_links.shape}"
+            )
+        return cls(list(map(set, numpy_links)))
+
+    def to_numpy(self) -> "np.ndarray":
+        import numpy as np
+
+        return np.array(list(self.all_pairs()))
+
 
 class PrefixedClusterHelper(ClusterHelper):
     """ClusterHelper which uses prefixes, to associate entities with datasets.
@@ -702,3 +726,26 @@ class PrefixedClusterHelper(ClusterHelper):
             Generator that produces known links inside given dataset.
         """
         return self.pairs_in_ds_tuple(ds_tuple=(ds_name, ds_name))
+
+    @classmethod
+    def from_numpy(
+        cls,
+        numpy_links: "np.ndarray",
+        ds_prefixes: OrderedDict[str, str],
+        *args,
+        **kwargs,
+    ) -> "PrefixedClusterHelper":
+        """Create a PrefixedClusterHelper from a 2D numpy array.
+
+        Args:
+            numpy_links: binary links in 2D numpy array
+            ds_prefixes: Dataset prefixes
+            args: ignored
+            kwargs: ignored
+
+        Returns:
+            "PrefixedClusterHelper":
+        """
+        # don't use super, else it will use this cls
+        ch = ClusterHelper.from_numpy(numpy_links)
+        return cls(data=ch.clusters, ds_prefixes=ds_prefixes)

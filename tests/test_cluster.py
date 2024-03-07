@@ -404,3 +404,22 @@ def test_intra_dataset_pairs(
     # tuple order does not matter in intra-dataset links
     frzset_pairs = set(map(frozenset, pair_list))
     assert expected_prefixed_pairs_intra == frzset_pairs
+
+
+def test_from_to_numpy(multi_source_prefixed_cluster, expected_prefixed_pairs):
+    prefixes, _ = multi_source_prefixed_cluster
+    ds_names = tuple(prefixes.keys())
+    ch = PrefixedClusterHelper.from_numpy(
+        np.array(list(expected_prefixed_pairs)), ds_prefixes=prefixes
+    )
+    assert expected_prefixed_pairs == {
+        tuple(sorted(pair)) for pair in ch.pairs_in_ds_tuple(ds_names)
+    }
+    assert (
+        ch.clusters
+        == PrefixedClusterHelper.from_numpy(
+            ch.to_numpy(), ds_prefixes=prefixes
+        ).clusters
+    )
+    with pytest.raises(ValueError, match="binary"):
+        ClusterHelper.from_numpy(np.array([["bb", "bba", "aas"]]))
