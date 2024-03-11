@@ -423,3 +423,8 @@ def test_from_to_numpy(multi_source_prefixed_cluster, expected_prefixed_pairs):
     )
     with pytest.raises(ValueError, match="binary"):
         ClusterHelper.from_numpy(np.array([["bb", "bba", "aas"]]))
+
+
+def test_empty_ds_prefixes():
+    with pytest.raises(ValueError, match="ds_prefixes"):
+        PrefixedClusterHelper()

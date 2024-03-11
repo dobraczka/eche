@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 from .graph_based_clustering import connected_components
 
 _BINARY_MATCH_LEN = 2
+_EMPTY_DEFAULT_DS_PREF: OrderedDict[str, str] = OrderedDict()
 
 
 class ClusterHelper:
@@ -527,14 +528,11 @@ class ClusterHelper:
                     out_file.write(f"{ele_line}\n")
 
     @classmethod
-    def from_numpy(cls, numpy_links: "np.ndarray", *args, **kwargs) -> "ClusterHelper":
+    def from_numpy(cls, numpy_links: "np.ndarray") -> "ClusterHelper":
         """Create a ClusterHelper from a 2D numpy array.
 
         Args:
             numpy_links: binary links in 2D numpy array
-            ds_prefixes: Dataset prefixes
-            args: ignored
-            kwargs: ignored
 
         Returns:
             "ClusterHelper":
@@ -589,9 +587,11 @@ class PrefixedClusterHelper(ClusterHelper):
 
     def __init__(
         self,
-        ds_prefixes: OrderedDict[str, str],
         data: Optional[Union[Iterable[Set], Dict]] = None,
+        ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
     ):
+        if len(ds_prefixes) == 0:
+            raise ValueError("Need ds_prefixes!")
         self.ds_prefixes = ds_prefixes
         super().__init__(data)
         for e_id in self.elements:
@@ -731,21 +731,44 @@ class PrefixedClusterHelper(ClusterHelper):
     def from_numpy(
         cls,
         numpy_links: "np.ndarray",
-        ds_prefixes: OrderedDict[str, str],
-        *args,
-        **kwargs,
+        ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
     ) -> "PrefixedClusterHelper":
         """Create a PrefixedClusterHelper from a 2D numpy array.
 
         Args:
             numpy_links: binary links in 2D numpy array
             ds_prefixes: Dataset prefixes
-            args: ignored
-            kwargs: ignored
 
         Returns:
             "PrefixedClusterHelper":
         """
+        if ds_prefixes is None:
+            raise ValueError("Need ds_prefixes!")
         # don't use super, else it will use this cls
         ch = ClusterHelper.from_numpy(numpy_links)
+        return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
+
+    @classmethod
+    def from_file(
+        cls,
+        path: Union[str, os.PathLike],
+        has_cluster_id: bool = False,
+        ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
+    ) -> "ClusterHelper":
+        """Create ClusterHelper from file.
+
+        Expects entities seperated by comma, with each line representing a cluster.
+
+        Args:
+            path: path to file containing entity clusters
+            has_cluster_id: if True, the first entry in each line is used as cluster id
+            ds_prefixes: Dataset prefixes
+
+        Returns:
+            ClusterHelper
+        """
+        if len(ds_prefixes) == 0:
+            raise ValueError("Need ds_prefixes!")
+        # don't use super, else it will use this cls
+        ch = ClusterHelper.from_file(path=path, has_cluster_id=has_cluster_id)
         return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
