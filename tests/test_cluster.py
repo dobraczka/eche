@@ -7,6 +7,8 @@ import numpy as np
 import pytest
 from eche import ClusterHelper, PrefixedClusterHelper
 
+_LEFT_RIGHT_NAMES = ("left", "right")
+
 
 @pytest.fixture()
 def prefixed_cluster():
@@ -388,18 +390,20 @@ def test_prefixed_cluster_add_to_cluster(prefixed_cluster):
 
 def test_pairs_in_ds_tuple_binary(prefixed_cluster, expected_prefixed_pairs):
     prefixes, clusters = prefixed_cluster
-    ds_names = tuple(prefixes.keys())
     ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
-    assert expected_prefixed_pairs == set(ch.pairs_in_ds_tuple(ds_tuple=ds_names))
+    assert expected_prefixed_pairs == set(
+        ch.pairs_in_ds_tuple(ds_tuple=_LEFT_RIGHT_NAMES)
+    )
 
 
 def test_pairs_in_ds_tuple_multi(
     multi_source_prefixed_cluster, expected_prefixed_pairs
 ):
     prefixes, clusters = multi_source_prefixed_cluster
-    ds_names = tuple(prefixes.keys())
     ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
-    assert expected_prefixed_pairs == set(ch.pairs_in_ds_tuple(ds_tuple=ds_names))
+    assert expected_prefixed_pairs == set(
+        ch.pairs_in_ds_tuple(ds_tuple=_LEFT_RIGHT_NAMES)
+    )
 
 
 def test_get_ds_entities(multi_source_prefixed_cluster):
@@ -431,12 +435,11 @@ def test_all_pairs_no_intra(
 
 def test_from_to_numpy(multi_source_prefixed_cluster, expected_prefixed_pairs):
     prefixes, _ = multi_source_prefixed_cluster
-    ds_names = tuple(prefixes.keys())
     ch = PrefixedClusterHelper.from_numpy(
         np.array(list(expected_prefixed_pairs)), ds_prefixes=prefixes
     )
     assert expected_prefixed_pairs == {
-        tuple(sorted(pair)) for pair in ch.pairs_in_ds_tuple(ds_names)
+        tuple(sorted(pair)) for pair in ch.pairs_in_ds_tuple(_LEFT_RIGHT_NAMES)
     }
     assert (
         ch.clusters
@@ -485,5 +488,6 @@ def test_from_zipped_file(
         has_cluster_id=False,
         ds_prefixes=prefixes,
     )
-    ds_names = tuple(prefixes.keys())
-    assert expected_prefixed_pairs == set(ch.pairs_in_ds_tuple(ds_tuple=ds_names))
+    assert expected_prefixed_pairs == set(
+        ch.pairs_in_ds_tuple(ds_tuple=_LEFT_RIGHT_NAMES)
+    )

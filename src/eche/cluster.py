@@ -748,17 +748,19 @@ class PrefixedClusterHelper(ClusterHelper):
     def pairs_in_ds_tuple(
         self, ds_tuple: Tuple[str, str]
     ) -> Generator[Tuple[str, str], None, None]:
-        """Returns known links between given datasets.
+        """Returns known links between two given datasets.
 
         Args:
             ds_tuple: Dataset tuple
 
         Returns:
-            Generator that produces known links between given datasets.
+            Generator that produces known links between two given datasets.
         """
         for ds_name in ds_tuple:
             if ds_name not in self.ds_names:
                 raise ValueError(f"Unknown dataset name {ds_name}")
+        if len(ds_tuple) != _BINARY_MATCH_LEN:
+            raise ValueError(f"Expected tuple of length 2, but got {len(ds_tuple)}!")
         lpref = self.ds_prefixes[ds_tuple[0]]
         rpref = self.ds_prefixes[ds_tuple[1]]
         for pair in super().all_pairs():
