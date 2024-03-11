@@ -592,6 +592,7 @@ class ClusterHelper:
         has_cluster_id: bool = False,
         sep: str = ",",
         encoding: str = "utf8",
+        **kwargs,
     ) -> "ClusterHelper":
         """Read an inner link file from a zip archive.
 
@@ -601,6 +602,8 @@ class ClusterHelper:
             has_cluster_id: if True, the first entry in each line is used as cluster id
             sep: seperator
             encoding: used to decode the data
+            args: ignored
+            kwargs: ignored
 
         Returns:
             ClusterHelper
@@ -731,35 +734,6 @@ class PrefixedClusterHelper(ClusterHelper):
         self._check_known_prefix(new_entity)
         return super().add_to_cluster(c_id=c_id, new_entity=new_entity)
 
-    def _e_id_to_pref_ds_name(self, e_id: str) -> Tuple[str, str]:
-        for ds_name, pref in self.ds_prefixes.items():
-            if e_id.startswith(pref):
-                return (ds_name, pref)
-        # should never happen, because we check this
-        raise ValueError(f"{e_id} does not have known prefix!")
-
-    def e_id_to_ds_name(self, e_id: str) -> str:
-        """Returns dataset name where entity belongs.
-
-        Args:
-            e_id: Entity id.
-
-        Returns:
-            dataset name where entity belongs
-        """
-        return self._e_id_to_pref_ds_name(e_id)[0]
-
-    def e_id_to_pref(self, e_id: str) -> str:
-        """Returns prefix of dataset where entity belongs.
-
-        Args:
-            e_id: Entity id.
-
-        Returns:
-            prefix where entity belongs
-        """
-        return self._e_id_to_pref_ds_name(e_id)[1]
-
     def get_ds_entities(self, ds_name: str) -> Generator[str, None, None]:
         """Get all entities belonging to the given dataset.
 
@@ -773,17 +747,6 @@ class PrefixedClusterHelper(ClusterHelper):
         for ele in self.elements:
             if ele.startswith(prefix):
                 yield ele
-
-    def all_pairs_no_intra(self) -> Generator[Tuple[str, str], None, None]:
-        """Returns (generator for) all pairs that are not intra-dataset links.
-
-        Returns:
-            generator for all pairs that are not intra-dataset links.
-        """
-        for pair in self.all_pairs():
-            left_pref = self.e_id_to_pref(pair[0])
-            if not pair[1].startswith(left_pref):
-                yield pair
 
     def pairs_in_ds_tuple(
         self, ds_tuple: Tuple[str, str]
@@ -849,6 +812,33 @@ class PrefixedClusterHelper(ClusterHelper):
         # don't use super, else it will use this cls
         ch = ClusterHelper.from_numpy(numpy_links)
         return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
+
+    @classmethod
+    def from_zipped_file(
+        cls,
+        path: Union[str, os.PathLike],
+        inner_path: str,
+        has_cluster_id: bool = False,
+        sep: str = ",",
+        encoding: str = "utf8",
+        ds_prefixes: OrderedDict[str, str],
+        **kwargs,
+    ) -> "ClusterHelper":
+        """Read an inner link file from a zip archive.
+
+        Args:
+            ds_prefixes: Dataset prefixes
+            path: The path to the zip archive
+            inner_path: The path inside the zip archive to the link file
+            has_cluster_id: if True, the first entry in each line is used as cluster id
+            sep: seperator
+            encoding: used to decode the data
+            args: ignored
+            kwargs: ignored
+
+        Returns:
+            ClusterHelper
+        """
 
 
 if __name__ == "__main__":

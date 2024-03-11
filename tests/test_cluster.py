@@ -1,3 +1,6 @@
+import os
+import pathlib
+import shutil
 from collections import OrderedDict
 
 import numpy as np
@@ -423,3 +426,25 @@ def test_from_to_numpy(multi_source_prefixed_cluster, expected_prefixed_pairs):
     )
     with pytest.raises(ValueError, match="binary"):
         ClusterHelper.from_numpy(np.array([["bb", "bba", "aas"]]))
+
+
+def _create_zipped_ent_links(
+    dir_path: pathlib.Path,
+    inner_path: str,
+    output_filename: str,
+    multi_source_prefixed_cluster,
+):
+    full_path = dir_path.joinpath(inner_path)
+    os.makedirs(full_path.parent)
+    prefixes, clusters = multi_source_prefixed_cluster
+    PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters).to_file(full_path)
+    shutil.make_archive(output_filename, "zip", dir_path)
+
+
+def test_from_zipped_file(tmp_path, multi_source_prefixed_cluster):
+    _create_zipped_ent_links(
+        tmp_path,
+        os.path.join("ds_name", "inner", "ent_links"),
+        "ds",
+        multi_source_prefixed_cluster,
+    )
