@@ -443,7 +443,7 @@ def _create_zipped_ent_links(
     os.makedirs(full_path.parent)
     prefixes, clusters = multi_source_prefixed_cluster
     PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters).to_file(full_path)
-    shutil.make_archive(output_filename, "zip", dir_path)
+    return shutil.make_archive(str(dir_path.joinpath(output_filename)), "zip", dir_path)
 
 
 def test_from_zipped_file(
@@ -452,15 +452,16 @@ def test_from_zipped_file(
     prefixes, _ = multi_source_prefixed_cluster
     zip_name = "ds"
     inner_path = os.path.join("ds_name", "inner", "ent_links")
-    _create_zipped_ent_links(
+    zip_path = _create_zipped_ent_links(
         tmp_path,
         inner_path,
         zip_name,
         multi_source_prefixed_cluster,
     )
+
     ch = PrefixedClusterHelper.from_zipped_file(
-        tmp_path.joinpath(f"{zip_name}.zip"),
-        inner_path=pathlib.PurePosixPath(inner_path),
+        path=zip_path,
+        inner_path=str(inner_path),
         has_cluster_id=False,
         ds_prefixes=prefixes,
     )
