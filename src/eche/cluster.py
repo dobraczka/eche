@@ -787,6 +787,30 @@ class PrefixedClusterHelper(ClusterHelper):
         """
         return self.pairs_in_ds_tuple(ds_tuple=(ds_name, ds_name))
 
+    def all_pairs_no_intra(self) -> Generator[Tuple[str, str], None, None]:
+        """Returns known links without intra-dataset pairs (with canonical ordering).
+
+        Returns:
+            Generator that produces known links without intra-dataset pairs.
+        """
+
+        def _find_prefix(e_id, prefixes) -> Tuple[str, int]:
+            for idx, pref in enumerate(self.known_prefixes):
+                if e_id.startswith(pref):
+                    return pref, idx
+            # we should never get here, because we checked this
+            raise ValueError(f"Unknown prefix for {e_id}")
+
+        for pair in super().all_pairs():
+            lpref, lidx = _find_prefix(pair[0], self.known_prefixes)
+            rpref, ridx = _find_prefix(pair[1], self.known_prefixes)
+            if lpref != rpref:
+                # check canonical order
+                if lidx > ridx:
+                    yield pair[1], pair[0]
+                else:
+                    yield pair
+
     @classmethod
     def from_numpy(
         cls,
