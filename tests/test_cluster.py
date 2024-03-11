@@ -428,6 +428,11 @@ def test_from_to_numpy(multi_source_prefixed_cluster, expected_prefixed_pairs):
         ClusterHelper.from_numpy(np.array([["bb", "bba", "aas"]]))
 
 
+def test_empty_ds_prefixes():
+    with pytest.raises(ValueError, match="ds_prefixes"):
+        PrefixedClusterHelper()
+
+
 def _create_zipped_ent_links(
     dir_path: pathlib.Path,
     inner_path: str,
@@ -441,14 +446,23 @@ def _create_zipped_ent_links(
     shutil.make_archive(output_filename, "zip", dir_path)
 
 
-def test_from_zipped_file(tmp_path, multi_source_prefixed_cluster, expected_prefixed_pairs):
+def test_from_zipped_file(
+    tmp_path, multi_source_prefixed_cluster, expected_prefixed_pairs
+):
     prefixes, _ = multi_source_prefixed_cluster
     zip_name = "ds"
     inner_path = os.path.join("ds_name", "inner", "ent_links")
     _create_zipped_ent_links(
         tmp_path,
-        ,
+        inner_path,
         zip_name,
         multi_source_prefixed_cluster,
     )
-    ch = PrefixedClusterHelper.from_zipped_file(tmp_path.joinpath(f"{zip_name}.zip"), inner_path=pathlib.PurePosixPath(inner_path), has_cluster_id=False
+    ch = PrefixedClusterHelper.from_zipped_file(
+        tmp_path.joinpath(f"{zip_name}.zip"),
+        inner_path=pathlib.PurePosixPath(inner_path),
+        has_cluster_id=False,
+        ds_prefixes=prefixes,
+    )
+    ds_names = tuple(prefixes.keys())
+    assert expected_prefixed_pairs == set(ch.pairs_in_ds_tuple(ds_tuple=ds_names))

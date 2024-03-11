@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 from .graph_based_clustering import connected_components
 
 _BINARY_MATCH_LEN = 2
+_EMPTY_DEFAULT_DS_PREF: OrderedDict[str, str] = OrderedDict()
 
 
 class ClusterHelper:
@@ -556,14 +557,11 @@ class ClusterHelper:
                     out_file.write(f"{ele_line}\n")
 
     @classmethod
-    def from_numpy(cls, numpy_links: "np.ndarray", *args, **kwargs) -> "ClusterHelper":
+    def from_numpy(cls, numpy_links: "np.ndarray") -> "ClusterHelper":
         """Create a ClusterHelper from a 2D numpy array.
 
         Args:
             numpy_links: binary links in 2D numpy array
-            ds_prefixes: Dataset prefixes
-            args: ignored
-            kwargs: ignored
 
         Returns:
             "ClusterHelper":
@@ -592,7 +590,6 @@ class ClusterHelper:
         has_cluster_id: bool = False,
         sep: str = ",",
         encoding: str = "utf8",
-        **kwargs,
     ) -> "ClusterHelper":
         """Read an inner link file from a zip archive.
 
@@ -602,8 +599,6 @@ class ClusterHelper:
             has_cluster_id: if True, the first entry in each line is used as cluster id
             sep: seperator
             encoding: used to decode the data
-            args: ignored
-            kwargs: ignored
 
         Returns:
             ClusterHelper
@@ -652,9 +647,11 @@ class PrefixedClusterHelper(ClusterHelper):
 
     def __init__(
         self,
-        ds_prefixes: OrderedDict[str, str],
         data: Optional[Union[Iterable[Set], Dict]] = None,
+        ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
     ):
+        if len(ds_prefixes) == 0:
+            raise ValueError("Need ds_prefixes!")
         self.ds_prefixes = ds_prefixes
         super().__init__(data)
         for e_id in self.elements:
@@ -794,21 +791,19 @@ class PrefixedClusterHelper(ClusterHelper):
     def from_numpy(
         cls,
         numpy_links: "np.ndarray",
-        ds_prefixes: OrderedDict[str, str],
-        *args,
-        **kwargs,
+        ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
     ) -> "PrefixedClusterHelper":
         """Create a PrefixedClusterHelper from a 2D numpy array.
 
         Args:
             numpy_links: binary links in 2D numpy array
             ds_prefixes: Dataset prefixes
-            args: ignored
-            kwargs: ignored
 
         Returns:
             "PrefixedClusterHelper":
         """
+        if ds_prefixes is None:
+            raise ValueError("Need ds_prefixes!")
         # don't use super, else it will use this cls
         ch = ClusterHelper.from_numpy(numpy_links)
         return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
@@ -821,8 +816,7 @@ class PrefixedClusterHelper(ClusterHelper):
         has_cluster_id: bool = False,
         sep: str = ",",
         encoding: str = "utf8",
-        ds_prefixes: OrderedDict[str, str],
-        **kwargs,
+        ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
     ) -> "ClusterHelper":
         """Read an inner link file from a zip archive.
 
@@ -833,18 +827,19 @@ class PrefixedClusterHelper(ClusterHelper):
             has_cluster_id: if True, the first entry in each line is used as cluster id
             sep: seperator
             encoding: used to decode the data
-            args: ignored
-            kwargs: ignored
+            ds_prefixes: Dataset prefixes
 
         Returns:
-            ClusterHelper
+            "PrefixedClusterHelper":
         """
-
-
-if __name__ == "__main__":
-    ch = ClusterHelper.from_zipped_file(
-        path="/home/dobraczka/.data/sylloge/open_ea/OpenEA_dataset_v2.0.zip",
-        inner_path="OpenEA_dataset_v2.0/D_W_15K_V1/721_5fold/1/train_links",
-        sep="\t",
-    )
-    print(ch)
+        if ds_prefixes is None:
+            raise ValueError("Need ds_prefixes!")
+        # don't use super, else it will use this cls
+        ch = ClusterHelper.from_zipped_file(
+            path=path,
+            inner_path=inner_path,
+            has_cluster_id=has_cluster_id,
+            sep=sep,
+            encoding=encoding,
+        )
+        return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
