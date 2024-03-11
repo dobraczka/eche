@@ -451,7 +451,7 @@ def test_from_zipped_file(
 ):
     prefixes, _ = multi_source_prefixed_cluster
     zip_name = "ds"
-    inner_path = os.path.join("ds_name", "inner", "ent_links")
+    inner_path = pathlib.PurePosixPath("ds_name", "inner", "ent_links")
     zip_path = _create_zipped_ent_links(
         tmp_path,
         inner_path,
