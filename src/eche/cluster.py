@@ -835,6 +835,37 @@ class PrefixedClusterHelper(ClusterHelper):
         return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
 
     @classmethod
+    def from_file(
+        cls,
+        path: Union[str, os.PathLike],
+        has_cluster_id: bool = False,
+        sep=",",
+        ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
+    ) -> "PrefixedClusterHelper":
+        """Create PrefixedClusterHelper from file.
+
+        Expects entities seperated by `sep`, with each line representing a cluster.
+
+        Args:
+            path: path to file containing entity clusters
+            has_cluster_id: if True, the first entry in each line is used as cluster id
+            sep: seperator
+            ds_prefixes: Dataset prefixes
+
+        Returns:
+            PrefixedClusterHelper
+        """
+        if ds_prefixes is None:
+            raise ValueError("Need ds_prefixes!")
+        # don't use super, else it will use this cls
+        ch = ClusterHelper.from_file(
+            path=path,
+            has_cluster_id=has_cluster_id,
+            sep=sep,
+        )
+        return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
+
+    @classmethod
     def from_zipped_file(
         cls,
         path: Union[str, os.PathLike],
@@ -843,11 +874,10 @@ class PrefixedClusterHelper(ClusterHelper):
         sep: str = ",",
         encoding: str = "utf8",
         ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
-    ) -> "ClusterHelper":
+    ) -> "PrefixedClusterHelper":
         """Read an inner link file from a zip archive.
 
         Args:
-            ds_prefixes: Dataset prefixes
             path: The path to the zip archive
             inner_path: The path inside the zip archive to the link file
             has_cluster_id: if True, the first entry in each line is used as cluster id
