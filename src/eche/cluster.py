@@ -748,17 +748,19 @@ class PrefixedClusterHelper(ClusterHelper):
     def pairs_in_ds_tuple(
         self, ds_tuple: Tuple[str, str]
     ) -> Generator[Tuple[str, str], None, None]:
-        """Returns known links between given datasets.
+        """Returns known links between two given datasets.
 
         Args:
             ds_tuple: Dataset tuple
 
         Returns:
-            Generator that produces known links between given datasets.
+            Generator that produces known links between two given datasets.
         """
         for ds_name in ds_tuple:
             if ds_name not in self.ds_names:
                 raise ValueError(f"Unknown dataset name {ds_name}")
+        if len(ds_tuple) != _BINARY_MATCH_LEN:
+            raise ValueError(f"Expected tuple of length 2, but got {len(ds_tuple)}!")
         lpref = self.ds_prefixes[ds_tuple[0]]
         rpref = self.ds_prefixes[ds_tuple[1]]
         for pair in super().all_pairs():
@@ -786,6 +788,30 @@ class PrefixedClusterHelper(ClusterHelper):
             Generator that produces known links inside given dataset.
         """
         return self.pairs_in_ds_tuple(ds_tuple=(ds_name, ds_name))
+
+    def all_pairs_no_intra(self) -> Generator[Tuple[str, str], None, None]:
+        """Returns known links without intra-dataset pairs (with canonical ordering).
+
+        Returns:
+            Generator that produces known links without intra-dataset pairs.
+        """
+
+        def _find_prefix(e_id, prefixes) -> Tuple[str, int]:
+            for idx, pref in enumerate(self.known_prefixes):
+                if e_id.startswith(pref):
+                    return pref, idx
+            # we should never get here, because we checked this
+            raise ValueError(f"Unknown prefix for {e_id}")
+
+        for pair in super().all_pairs():
+            lpref, lidx = _find_prefix(pair[0], self.known_prefixes)
+            rpref, ridx = _find_prefix(pair[1], self.known_prefixes)
+            if lpref != rpref:
+                # check canonical order
+                if lidx > ridx:
+                    yield pair[1], pair[0]
+                else:
+                    yield pair
 
     @classmethod
     def from_numpy(
