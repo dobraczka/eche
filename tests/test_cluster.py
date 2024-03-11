@@ -1,3 +1,6 @@
+import os
+import pathlib
+import shutil
 from collections import OrderedDict
 
 import numpy as np
@@ -428,3 +431,39 @@ def test_from_to_numpy(multi_source_prefixed_cluster, expected_prefixed_pairs):
 def test_empty_ds_prefixes():
     with pytest.raises(ValueError, match="ds_prefixes"):
         PrefixedClusterHelper()
+
+
+def _create_zipped_ent_links(
+    dir_path: pathlib.Path,
+    inner_path: str,
+    output_filename: str,
+    multi_source_prefixed_cluster,
+):
+    full_path = dir_path.joinpath(inner_path)
+    os.makedirs(full_path.parent)
+    prefixes, clusters = multi_source_prefixed_cluster
+    PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters).to_file(full_path)
+    return shutil.make_archive(str(dir_path.joinpath(output_filename)), "zip", dir_path)
+
+
+def test_from_zipped_file(
+    tmp_path, multi_source_prefixed_cluster, expected_prefixed_pairs
+):
+    prefixes, _ = multi_source_prefixed_cluster
+    zip_name = "ds"
+    inner_path = pathlib.PurePosixPath("ds_name", "inner", "ent_links")
+    zip_path = _create_zipped_ent_links(
+        tmp_path,
+        inner_path,
+        zip_name,
+        multi_source_prefixed_cluster,
+    )
+
+    ch = PrefixedClusterHelper.from_zipped_file(
+        path=zip_path,
+        inner_path=str(inner_path),
+        has_cluster_id=False,
+        ds_prefixes=prefixes,
+    )
+    ds_names = tuple(prefixes.keys())
+    assert expected_prefixed_pairs == set(ch.pairs_in_ds_tuple(ds_tuple=ds_names))

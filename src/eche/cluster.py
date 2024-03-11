@@ -1,9 +1,11 @@
 """Methods to deal with entity clusters."""
 import os
 import random
+import zipfile
 from copy import deepcopy
 from itertools import chain, combinations
 from typing import (
+    IO,
     TYPE_CHECKING,
     Any,
     Dict,
@@ -478,46 +480,73 @@ class ClusterHelper:
         return sum(map(number_of_pairs_in_set, self.clusters.values()))
 
     @classmethod
+    def _create_with_cluster_id(
+        cls, io_object: IO, sep: str, encoding: str
+    ) -> "ClusterHelper":
+        e_to_cid: Dict[Union[int, str], Set[str]] = {}
+        for line in io_object:
+            c_id: Union[str, int]
+            if isinstance(line, bytes):
+                values = line.decode(encoding).strip().split(sep)
+            else:
+                values = line.strip().split(sep)
+            try:
+                c_id = int(values[0])
+            except ValueError:
+                c_id = values[0]
+            entries = set(values[1:])
+            e_to_cid[c_id] = entries
+        return cls(e_to_cid)
+
+    @classmethod
+    def _create_without_cluster_id(
+        cls, io_object: IO, sep: str, encoding: str
+    ) -> "ClusterHelper":
+        clusters = []
+        for line in io_object:
+            value_line = line.decode(encoding) if isinstance(line, bytes) else line
+            clusters.append(set(value_line.strip().split(sep)))
+        return cls(clusters)
+
+    @classmethod
+    def _from_IO(
+        cls,
+        io_object: IO,
+        has_cluster_id: bool = False,
+        sep: str = ",",
+        encoding: str = "utf8",
+    ) -> "ClusterHelper":
+        if has_cluster_id:
+            return cls._create_with_cluster_id(io_object, sep, encoding)
+        return cls._create_without_cluster_id(io_object, sep, encoding)
+
+    @classmethod
     def from_file(
-        cls, path: Union[str, os.PathLike], has_cluster_id: bool = False
+        cls, path: Union[str, os.PathLike], has_cluster_id: bool = False, sep=","
     ) -> "ClusterHelper":
         """Create ClusterHelper from file.
 
-        Expects entities seperated by comma, with each line representing a cluster.
+        Expects entities seperated by `sep`, with each line representing a cluster.
 
         Args:
             path: path to file containing entity clusters
             has_cluster_id: if True, the first entry in each line is used as cluster id
+            sep: seperator
 
         Returns:
             ClusterHelper
         """
-        e_to_cid: Dict[Union[int, str], Set[str]] = {}
         with open(path) as in_file:
-            for idx, line in enumerate(in_file):
-                c_id: Union[str, int]
-                values = line.strip().split(",")
-                entries_start = 0
-                if has_cluster_id:
-                    entries_start = 1
-                    try:
-                        c_id = int(values[0])
-                    except ValueError:
-                        c_id = values[0]
-                else:
-                    c_id = idx
-                entries = set(values[entries_start:])
-                e_to_cid[c_id] = entries
-        return ClusterHelper(e_to_cid)
+            return cls._from_IO(in_file, has_cluster_id=has_cluster_id, sep=sep)
 
-    def to_file(self, path: Union[str, os.PathLike], write_cluster_id: bool = True):
+    def to_file(self, path: Union[str, os.PathLike], write_cluster_id: bool = False):
         """Write clusters to file.
 
-        Each line is: cluster_id,comma-seperated entities.
+        Each cluster line is consists of comma-seperated entities.
 
         Args:
             path: Where to write the clusters.
-            write_cluster_id: If False, lines are only comma-seperated entities
+            write_cluster_id: If True, first entry of each line is the cluster id
         """
         with open(path, "w") as out_file:
             for c_id, elements in self.clusters.items():
@@ -544,9 +573,40 @@ class ClusterHelper:
         return cls(list(map(set, numpy_links)))
 
     def to_numpy(self) -> "np.ndarray":
+        """Return binary links as numpy array.
+
+        Returns:
+            binary links
+        """
         import numpy as np
 
         return np.array(list(self.all_pairs()))
+
+    @classmethod
+    def from_zipped_file(
+        cls,
+        path: Union[str, os.PathLike],
+        inner_path: str,
+        has_cluster_id: bool = False,
+        sep: str = ",",
+        encoding: str = "utf8",
+    ) -> "ClusterHelper":
+        """Read an inner link file from a zip archive.
+
+        Args:
+            path: The path to the zip archive
+            inner_path: The path inside the zip archive to the link file
+            has_cluster_id: if True, the first entry in each line is used as cluster id
+            sep: seperator
+            encoding: used to decode the data
+
+        Returns:
+            ClusterHelper
+        """
+        with zipfile.ZipFile(file=path) as zip_file, zip_file.open(inner_path) as file:
+            return cls._from_IO(
+                file, has_cluster_id=has_cluster_id, sep=sep, encoding=encoding
+            )
 
 
 class PrefixedClusterHelper(ClusterHelper):
@@ -749,26 +809,37 @@ class PrefixedClusterHelper(ClusterHelper):
         return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
 
     @classmethod
-    def from_file(
+    def from_zipped_file(
         cls,
         path: Union[str, os.PathLike],
+        inner_path: str,
         has_cluster_id: bool = False,
+        sep: str = ",",
+        encoding: str = "utf8",
         ds_prefixes: OrderedDict[str, str] = _EMPTY_DEFAULT_DS_PREF,
     ) -> "ClusterHelper":
-        """Create ClusterHelper from file.
-
-        Expects entities seperated by comma, with each line representing a cluster.
+        """Read an inner link file from a zip archive.
 
         Args:
-            path: path to file containing entity clusters
+            ds_prefixes: Dataset prefixes
+            path: The path to the zip archive
+            inner_path: The path inside the zip archive to the link file
             has_cluster_id: if True, the first entry in each line is used as cluster id
+            sep: seperator
+            encoding: used to decode the data
             ds_prefixes: Dataset prefixes
 
         Returns:
-            ClusterHelper
+            "PrefixedClusterHelper":
         """
-        if len(ds_prefixes) == 0:
+        if ds_prefixes is None:
             raise ValueError("Need ds_prefixes!")
         # don't use super, else it will use this cls
-        ch = ClusterHelper.from_file(path=path, has_cluster_id=has_cluster_id)
+        ch = ClusterHelper.from_zipped_file(
+            path=path,
+            inner_path=inner_path,
+            has_cluster_id=has_cluster_id,
+            sep=sep,
+            encoding=encoding,
+        )
         return cls(data=ch.clusters, ds_prefixes=ds_prefixes)
