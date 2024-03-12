@@ -431,6 +431,7 @@ def test_all_pairs_no_intra(
     prefixes, clusters = multi_source_prefixed_cluster
     ch = PrefixedClusterHelper(ds_prefixes=prefixes, data=clusters)
     assert expected_prefixed_pairs_no_intra_full == set(ch.all_pairs_no_intra())
+    assert len(expected_prefixed_pairs_no_intra_full) == ch.number_of_no_intra_links
 
 
 def test_from_to_numpy(multi_source_prefixed_cluster, expected_prefixed_pairs):
