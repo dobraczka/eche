@@ -99,10 +99,8 @@ class ClusterHelper:
         return False
 
     def _from_sets(self, data: Iterable[Set]):
-        # check if contains overlaps
-        if self._contains_overlaps(data):
-            # merge overlapping
-            data = connected_components(data)
+        # merge overlapping
+        data = connected_components(data)
 
         for cluster_id, inner in enumerate(data):
             if not isinstance(inner, set):
@@ -158,13 +156,15 @@ class ClusterHelper:
             return
         if not isinstance(data, (dict, list)):
             raise TypeError(f"Only list or dict allowed, but got {type(data)}")
-        if isinstance(data, list):
-            self._from_sets(data)
-        elif isinstance(data, dict) and len(data) != 0:
+        if isinstance(data, dict) and len(data) != 0:
             if isinstance(next(iter(data.values())), set):
                 self._from_clusters(data)
-            else:
-                self._from_dict(data)
+                return
+            # assume binary links as key-value pairs
+            # transform to iterable sets of 2
+            data = (set(pair) for pair in data.items())
+        if isinstance(data, Iterable):
+            self._from_sets(data)
 
     def __repr__(self):
         return f"ClusterHelper(elements={self.elements!s},clusters={self.clusters!s})"

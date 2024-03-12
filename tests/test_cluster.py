@@ -105,10 +105,6 @@ def test_clusters_init():
     }
     assert {frozenset(c) for c in ch_sets.clusters.values()} == expected_clusters
 
-    # assert no selflinks
-    with pytest.raises(ValueError, match="selflinks"):
-        ClusterHelper({"1": "1"})
-
     # assert no multiple cluster memberships with cluster init
     with pytest.raises(ValueError, match="multiple membership"):
         ClusterHelper({0: {"1", "2"}, 1: {"1", "3"}})
@@ -492,3 +488,14 @@ def test_from_zipped_file(
     assert expected_prefixed_pairs == set(
         ch.pairs_in_ds_tuple(ds_tuple=_LEFT_RIGHT_NAMES)
     )
+
+
+def test_transitivity_for_all_inits():
+    gold = {0: {"a", "b", "c"}}
+    assert ClusterHelper(gold).clusters == gold
+    assert ClusterHelper({"a": "b", "b": "c"}).clusters == gold
+    assert ClusterHelper([{"a", "b"}, {"b", "c"}]).clusters == gold
+    assert ClusterHelper([{"a", "b", "c"}]).clusters == gold
+
+    # self-links should not matter anymore
+    assert ClusterHelper({"a": "a", "b": "a", "c": "b"}).clusters == gold
