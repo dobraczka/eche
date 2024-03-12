@@ -813,6 +813,11 @@ class PrefixedClusterHelper(ClusterHelper):
                 else:
                     yield pair
 
+    @property
+    def number_of_no_intra_links(self) -> int:
+        """Returns number of links without intra-dataset links."""
+        return sum(1 for _ in self.all_pairs_no_intra())
+
     @classmethod
     def from_numpy(
         cls,
