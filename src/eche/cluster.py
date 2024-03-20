@@ -59,6 +59,12 @@ class ClusterHelper:
         >>> print(ch.clusters)
         {0: {'a1', 'c1'}, 1: {'a2', 'b2'}, 2: {'f1', 'e2', 'c3'}}
 
+        Transitively connected clusters are automatically resolved
+
+        >>> ch = ClusterHelper([{"a", "b"}, {"b", "c"}])
+        >>> print(ch.clusters)
+        {0: {'a', 'b', 'c'}}
+
         The __contains__ function is smartly overloaded. You can
         check if an entity is in the ClusterHelper
 
@@ -558,13 +564,16 @@ class ClusterHelper:
 
     @classmethod
     def from_numpy(cls, numpy_links: "np.ndarray") -> "ClusterHelper":
-        """Create a ClusterHelper from a 2D numpy array.
+        """Create a ClusterHelper from a 2D numpy array (i.e. binary entity links).
 
         Args:
             numpy_links: binary links in 2D numpy array
 
         Returns:
             "ClusterHelper":
+
+        Raises:
+            ValueError if shape is not 2D
         """
         if not numpy_links.shape[1] == _BINARY_MATCH_LEN:
             raise ValueError(
