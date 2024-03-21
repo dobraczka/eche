@@ -503,6 +503,13 @@ def test_transitivity_for_all_inits():
     assert ClusterHelper({"a": "a", "b": "a", "c": "b"}).clusters == gold
 
 
+def test_number_of_intra_dataset_links(multi_source_prefixed_cluster):
+    prefixes, data = multi_source_prefixed_cluster
+    assert PrefixedClusterHelper(
+        data=data, ds_prefixes=prefixes
+    ).number_of_intra_links == (2, 0, 2)
+
+
 def _create_zipped_messy_comma_links(
     dir_path: pathlib.Path,
     inner_path: str,
