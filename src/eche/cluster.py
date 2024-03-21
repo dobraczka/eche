@@ -1,4 +1,5 @@
 """Methods to deal with entity clusters."""
+import csv
 import os
 import random
 import zipfile
@@ -487,32 +488,24 @@ class ClusterHelper:
 
     @classmethod
     def _create_with_cluster_id(
-        cls, io_object: IO, sep: str, encoding: str
+        cls, csv_reader, sep: str, encoding: str
     ) -> "ClusterHelper":
         e_to_cid: Dict[Union[int, str], Set[str]] = {}
-        for line in io_object:
+        for row in csv_reader:
             c_id: Union[str, int]
-            if isinstance(line, bytes):
-                values = line.decode(encoding).strip().split(sep)
-            else:
-                values = line.strip().split(sep)
             try:
-                c_id = int(values[0])
+                c_id = int(row[0])
             except ValueError:
-                c_id = values[0]
-            entries = set(values[1:])
+                c_id = row[0]
+            entries = set(row[1:])
             e_to_cid[c_id] = entries
         return cls(e_to_cid)
 
     @classmethod
     def _create_without_cluster_id(
-        cls, io_object: IO, sep: str, encoding: str
+        cls, csv_reader, sep: str, encoding: str
     ) -> "ClusterHelper":
-        clusters = []
-        for line in io_object:
-            value_line = line.decode(encoding) if isinstance(line, bytes) else line
-            clusters.append(set(value_line.strip().split(sep)))
-        return cls(clusters)
+        return cls([set(row) for row in csv_reader])
 
     @classmethod
     def _from_IO(
@@ -522,9 +515,15 @@ class ClusterHelper:
         sep: str = ",",
         encoding: str = "utf8",
     ) -> "ClusterHelper":
+        if isinstance(io_object, zipfile.ZipExtFile):
+            reader = csv.reader(
+                (line.decode(encoding) for line in io_object), delimiter=sep
+            )
+        else:
+            reader = csv.reader(io_object, delimiter=sep)
         if has_cluster_id:
-            return cls._create_with_cluster_id(io_object, sep, encoding)
-        return cls._create_without_cluster_id(io_object, sep, encoding)
+            return cls._create_with_cluster_id(reader, sep, encoding)
+        return cls._create_without_cluster_id(reader, sep, encoding)
 
     @classmethod
     def from_file(
@@ -555,12 +554,12 @@ class ClusterHelper:
             write_cluster_id: If True, first entry of each line is the cluster id
         """
         with open(path, "w") as out_file:
+            writer = csv.writer(out_file, delimiter=",", quotechar='"')
             for c_id, elements in self.clusters.items():
-                ele_line = ",".join(elements)
                 if write_cluster_id:
-                    out_file.write(f"{c_id},{ele_line}\n")
+                    writer.writerow([c_id, *elements])
                 else:
-                    out_file.write(f"{ele_line}\n")
+                    writer.writerow(elements)
 
     @classmethod
     def from_numpy(cls, numpy_links: "np.ndarray") -> "ClusterHelper":
