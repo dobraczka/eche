@@ -9,6 +9,8 @@ from eche import ClusterHelper, PrefixedClusterHelper
 
 _LEFT_RIGHT_NAMES = ("left", "right")
 
+RESOURCES_PATH = pathlib.Path(__file__).parent.joinpath("resources").absolute()
+
 
 @pytest.fixture()
 def prefixed_cluster():
@@ -499,3 +501,47 @@ def test_transitivity_for_all_inits():
 
     # self-links should not matter anymore
     assert ClusterHelper({"a": "a", "b": "a", "c": "b"}).clusters == gold
+
+
+def _create_zipped_messy_comma_links(
+    dir_path: pathlib.Path,
+    inner_path: str,
+    output_filename: str,
+):
+    full_path = dir_path.joinpath(inner_path)
+    os.makedirs(full_path.parent)
+    shutil.copy(RESOURCES_PATH.joinpath("messy_commas"), full_path)
+    return shutil.make_archive(str(dir_path.joinpath(output_filename)), "zip", dir_path)
+
+
+def test_escape_commas_zipped(tmp_path):
+    zip_name = "ds"
+    inner_path = pathlib.PurePosixPath("ds_name", "inner", "ent_links")
+    zip_path = _create_zipped_messy_comma_links(
+        tmp_path,
+        inner_path,
+        zip_name,
+    )
+
+    ch = ClusterHelper.from_zipped_file(
+        path=zip_path,
+        inner_path=str(inner_path),
+        has_cluster_id=False,
+    )
+    assert {0: {"bla,_ej", "abc"}, 1: {"a", "b", "c"}} == ch.clusters
+
+
+@pytest.mark.parametrize(
+    ("file_name", "expected"),
+    [
+        ("basic_links", {0: {"a", "b", "c"}, 1: {"d", "e"}}),
+        ("multi_links", {0: {"a", "b", "c", "z", "h"}, 1: {"d", "e"}}),
+        ("messy_commas", {0: {"bla,_ej", "abc"}, 1: {"a", "b", "c"}}),
+    ],
+)
+def test_read_from_to_file(file_name, expected, tmp_path):
+    ch = ClusterHelper.from_file(RESOURCES_PATH.joinpath(file_name))
+    assert ch.clusters == expected
+    new_path = tmp_path.joinpath("tmp_links")
+    ch.to_file(new_path)
+    assert ClusterHelper.from_file(new_path).clusters == expected
