@@ -1,7 +1,6 @@
 """Methods to deal with entity clusters."""
 import csv
 import os
-import platform
 import random
 import zipfile
 from copy import deepcopy
@@ -506,16 +505,7 @@ class ClusterHelper:
     def _create_without_cluster_id(
         cls, csv_reader, sep: str, encoding: str
     ) -> "ClusterHelper":
-        cluster = []
-        for row in csv_reader:
-            if platform.system() == "Windows":
-                print(row)
-            cluster.append(row)
-
-        if platform.system() == "Windows":
-            print(cluster)
-        return cls(cluster)
-        # return cls([set(row) for row in csv_reader])
+        return cls([set(row) for row in csv_reader])
 
     @classmethod
     def _from_IO(
