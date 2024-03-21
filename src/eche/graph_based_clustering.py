@@ -28,11 +28,15 @@ def to_chain(elements: Collection[T]) -> Generator[Tuple[T, T], None, None]:
         elements: Container with elements
 
     Examples:
-        >>> to_chain(['a','b','c','d'])
-        [(a,b), (b,c),(c,d)]
+        >>> list(to_chain(["a", "b", "c", "d"]))
+        [("a", "b"), ("a", "c"), ("a", "d")]
     """
-    it = iter(set(elements))
-    last = next(it)
+    try:
+        it = iter(set(elements))
+        last = next(it)
+    except StopIteration:
+        # return an empty generator https://stackoverflow.com/a/13243870
+        return
 
     for current in it:
         yield last, current
