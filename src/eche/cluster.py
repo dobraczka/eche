@@ -827,6 +827,14 @@ class PrefixedClusterHelper(ClusterHelper):
         """Returns number of links without intra-dataset links."""
         return sum(1 for _ in self.all_pairs_no_intra())
 
+    @property
+    def number_of_intra_links(self) -> Tuple[int, ...]:
+        """Returns number of intra-dataset links for each dataset."""
+        return tuple(
+            sum(1 for _ in self.intra_dataset_pairs(ds_name=ds_name))
+            for ds_name in self.ds_names
+        )
+
     @classmethod
     def from_numpy(
         cls,
