@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "eche"
-version = "0.2.0"
+version = "0.2.1"
 description = "Little helper for handling entity clusters"
 authors = ["Daniel Obraczka <obraczka@informatik.uni-leipzig.de>"]
 license = "MIT"
